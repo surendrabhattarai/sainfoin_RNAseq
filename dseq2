@@ -1,0 +1,29 @@
+setwd("~/Desktop/Thesis/RNAseq")
+library("DESeq2")
+library(data.table)
+
+read.csv("Count.csv",header=T,sep=",",row.names="geneID")->cts
+head(cts)
+
+read.table("condition.txt", header=T,sep="\t",row.names="id")->coldata
+
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ condition)
+dds
+
+dds<-DESeq(dds)
+res<-results(dds)
+res
+#BiocManager::install("apeglm")
+resultsNames(dds)
+#######################################
+library("BiocParallel")
+register(MulticoreParam(4))
+#######################################
+resLFC <- lfcShrink(dds, coef="condition_B_vs_A", type="apeglm")
+resLFC
+resOrdered <- res[order(res$pvalue),]
+summary(res)
+
+write.csv(as.data.frame(resOrdered),file="BA.csv")
